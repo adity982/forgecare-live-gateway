@@ -1,0 +1,15 @@
+{
+  "name": "forgecare-live-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stable public address for the laptop-hosted ForgeCare demonstration",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "http-proxy": "1.18.1"
+  }
+}
