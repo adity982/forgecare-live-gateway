@@ -165,4 +165,5 @@ if __name__ == "__main__":
     parser.add_argument("--key", type=Path, required=True)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     asyncio.run(main(args.gateway, args.key))

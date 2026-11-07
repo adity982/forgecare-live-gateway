@@ -10,16 +10,41 @@ New-Item -ItemType Directory -Path $logs -Force | Out-Null
 if (-not (Test-Path -LiteralPath $python)) { throw "Prepared Python interpreter missing: $python" }
 if (-not (Test-Path -LiteralPath $privateKey)) { throw "Laptop bridge signing key missing: $privateKey" }
 
-foreach ($url in @('http://127.0.0.1:8000/health', 'http://127.0.0.1:8001/health',
-                   'http://127.0.0.1:8501/_stcore/health', 'http://127.0.0.1:8502/health')) {
+$services = @(
+    @{ Name='operations'; Url='http://127.0.0.1:8000/health'; Command='forgecare.ops_api:app' },
+    @{ Name='knowledge'; Url='http://127.0.0.1:8001/health'; Command='forgecare.knowledge_api:app' },
+    @{ Name='dashboard'; Url='http://127.0.0.1:8501/_stcore/health'; Command='streamlit run forgecare\ui.py' },
+    @{ Name='camera-relay'; Url='http://127.0.0.1:8502/health'; Command='forgecare.relay_api:app' }
+)
+$needsStart = $false
+foreach ($service in $services) {
     try {
-        $response = Invoke-WebRequest -Uri $url -TimeoutSec 3 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri $service.Url -TimeoutSec 3 -UseBasicParsing
         if ($response.StatusCode -ne 200) { throw "Local service returned $($response.StatusCode)" }
     } catch {
-        $env:FORGECARE_DATA = $data
-        $env:FORGECARE_PYTHON = $python
-        & (Join-Path $release 'start-laptop.ps1') | Out-Null
-        break
+        $needsStart = $true
+        $servicePidFile = Join-Path $logs "$($service.Name).pid"
+        if (Test-Path -LiteralPath $servicePidFile) {
+            $serviceId = [int](Get-Content -LiteralPath $servicePidFile -Raw)
+            $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $serviceId" -ErrorAction SilentlyContinue
+            if ($parent -and $parent.CommandLine.Contains($service.Command)) {
+                $children = Get-CimInstance Win32_Process | Where-Object {
+                    $_.ParentProcessId -eq $serviceId -and $_.CommandLine -and $_.CommandLine.Contains($service.Command)
+                }
+                foreach ($child in $children) { Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue }
+                Stop-Process -Id $serviceId -Force -ErrorAction SilentlyContinue
+                Write-Output "$($service.Name) was unresponsive; restarting its verified process."
+            }
+        }
+    }
+}
+if ($needsStart) {
+    $env:FORGECARE_DATA = $data
+    $env:FORGECARE_PYTHON = $python
+    & (Join-Path $release 'start-laptop.ps1') | Out-Null
+    foreach ($service in $services) {
+        $response = Invoke-WebRequest -Uri $service.Url -TimeoutSec 5 -UseBasicParsing
+        if ($response.StatusCode -ne 200) { throw "$($service.Name) did not recover" }
     }
 }
 
