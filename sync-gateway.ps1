@@ -84,7 +84,7 @@ $targets = @{ dashboard = $dashboard; relay = $relay } | ConvertTo-Json -Depth 2
 $targetPath = Join-Path $PSScriptRoot 'targets.json'
 $current = Get-Content -LiteralPath $targetPath -Raw | ConvertFrom-Json
 if ($current.dashboard -ne $dashboard -or $current.relay -ne $relay) {
-    Set-Content -LiteralPath $targetPath -Value $targets -Encoding utf8
+    [System.IO.File]::WriteAllText($targetPath, $targets + "`n", [System.Text.UTF8Encoding]::new($false))
     Push-Location $PSScriptRoot
     try {
         & git add -- targets.json
