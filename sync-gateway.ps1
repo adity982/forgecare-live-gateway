@@ -23,20 +23,48 @@ function Get-TunnelUrl([string]$name) {
     return $matchesFound[$matchesFound.Count - 1].Value
 }
 
+function Test-Tunnel([string]$url, [string]$name) {
+    if (-not $url) { return $false }
+    $healthPath = if ($name -eq 'cloudflared') { '/_stcore/health' } else { '/health' }
+    try {
+        # A newly assigned quick-tunnel name can remain negatively cached by
+        # Windows DNS even after Cloudflare publishes it. Query public DNS and
+        # connect to that address while retaining the correct TLS host name.
+        $hostName = ([uri]$url).Host
+        $address = Resolve-DnsName -Name $hostName -Type A -Server 1.1.1.1 -ErrorAction Stop |
+            Where-Object { $_.IPAddress } | Select-Object -First 1 -ExpandProperty IPAddress
+        if (-not $address) { return $false }
+        $result = @(& curl.exe --silent --show-error --max-time 6 --resolve "${hostName}:443:${address}" `
+            --write-out "`n%{http_code}" ($url + $healthPath) 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $result.Count -lt 2 -or $result[-1] -ne '200') { return $false }
+        $body = ($result[0..($result.Count - 2)] -join "`n").Trim()
+        if ($name -eq 'cloudflared') { return $body -eq 'ok' }
+        return ($body | ConvertFrom-Json).ok -eq $true
+    } catch { return $false }
+}
+
 function Ensure-Tunnel([string]$name, [int]$port) {
     $pidFile = Join-Path $logs "$name.pid"
     $processId = if (Test-Path -LiteralPath $pidFile) { [int](Get-Content -LiteralPath $pidFile -Raw) } else { 0 }
     $process = if ($processId -gt 0) { Get-Process -Id $processId -ErrorAction SilentlyContinue } else { $null }
     $url = Get-TunnelUrl $name
-    if ($process -and $url) { return $url }
+    if ($process -and (Test-Tunnel $url $name)) { return $url }
+    if ($process) {
+        $command = (Get-CimInstance Win32_Process -Filter "ProcessId = $processId" -ErrorAction SilentlyContinue).CommandLine
+        if ($command -match 'cloudflared' -and $command -match "127\.0\.0\.1:$port") {
+            Stop-Process -Id $processId -Force
+            Start-Sleep -Seconds 2
+        }
+    }
     $stderr = Join-Path $logs "$name.err.log"
     $stdout = Join-Path $logs "$name.out.log"
+    Set-Content -LiteralPath $stderr -Value ''
     $newProcess = Start-Process -FilePath $cloudflared -ArgumentList @('tunnel', '--url', "http://127.0.0.1:$port", '--no-autoupdate') -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     Set-Content -LiteralPath $pidFile -Value $newProcess.Id
-    for ($attempt = 0; $attempt -lt 25; $attempt++) {
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
         Start-Sleep -Seconds 1
         $url = Get-TunnelUrl $name
-        if ($url) { return $url }
+        if ($url -and (Test-Tunnel $url $name)) { return $url }
     }
     throw "$name did not become reachable; inspect $stderr"
 }
