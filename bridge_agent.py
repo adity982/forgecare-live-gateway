@@ -142,14 +142,19 @@ async def connected(gateway: str, private_key: Path) -> None:
 async def main(gateway: str, private_key: Path) -> None:
     pause = 1
     while True:
+        started = asyncio.get_running_loop().time()
+        error = None
         try:
             await connected(gateway, private_key)
-            pause = 1
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            error = exc
+        if asyncio.get_running_loop().time() - started > 10:
+            pause = 1
+        if error:
             LOG.warning("Gateway disconnected: %s: %s; retrying in %s seconds",
-                        type(exc).__name__, str(exc)[:160], pause)
+                        type(error).__name__, str(error)[:160], pause)
         await asyncio.sleep(pause)
         pause = min(pause * 2, 30)
 

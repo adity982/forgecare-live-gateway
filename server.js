@@ -4,19 +4,13 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const httpProxy = require("http-proxy");
 const { WebSocket, WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT || 10000);
-const CONFIG_URL = "https://raw.githubusercontent.com/adity982/forgecare-live-gateway/main/targets.json";
-const REFRESH_MS = 20_000;
 const BRIDGE_PUBLIC_KEY = crypto.createPublicKey(fs.readFileSync(path.join(__dirname, "bridge-public.pem")));
 const MAX_BRIDGE_MESSAGE = 32 * 1024 * 1024;
-const initial = JSON.parse(fs.readFileSync(path.join(__dirname, "targets.json"), "utf8").replace(/^\uFEFF/, ""));
-let targets = validateTargets(initial);
-let refreshedAt = 0;
-let refreshing = null;
 let bridge = null;
+let lastBridgeHeartbeat = 0;
 const pendingHttp = new Map();
 const browserSockets = new Map();
 const bridgeWss = new WebSocketServer({ noServer: true, maxPayload: MAX_BRIDGE_MESSAGE });
@@ -53,6 +47,7 @@ function closeBridgeClients() {
 function handleBridgePacket(raw) {
   let packet;
   try { packet = JSON.parse(raw.toString()); } catch { return; }
+  lastBridgeHeartbeat = Date.now();
   if (packet.type === "heartbeat") return;
   if (packet.type === "http_response") {
     const item = pendingHttp.get(packet.id);
@@ -106,6 +101,7 @@ function acceptBridge(ws) {
     clearTimeout(deadline);
     if (bridgeReady()) bridge.close(4001, "Replaced by new laptop connection");
     bridge = ws;
+    lastBridgeHeartbeat = Date.now();
     ws.send(JSON.stringify({ type: "auth_ok" }));
     ws.on("message", handleBridgePacket);
     ws.on("close", () => { if (bridge === ws) { bridge = null; closeBridgeClients(); } });
@@ -155,93 +151,33 @@ function bridgeBrowser(ws, req) {
   ws.on("error", () => { browserSockets.delete(id); sendBridge({ type: "ws_close", id }); });
 }
 
-function validateTargets(value) {
-  const out = {};
-  for (const name of ["dashboard", "relay"]) {
-    const parsed = new URL(value[name]);
-    if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".trycloudflare.com")) {
-      throw new Error(`Invalid ${name} tunnel target`);
-    }
-    out[name] = parsed.origin;
+setInterval(() => {
+  if (bridgeReady() && Date.now() - lastBridgeHeartbeat > 65000) {
+    console.error("Laptop bridge heartbeat expired; forcing reconnect");
+    bridge.terminate();
   }
-  return out;
-}
+}, 15000).unref();
 
-async function refreshTargets() {
-  if (Date.now() - refreshedAt < REFRESH_MS) return;
-  if (refreshing) return refreshing;
-  refreshing = (async () => {
-    try {
-      const response = await fetch(`${CONFIG_URL}?t=${Date.now()}`, {
-        headers: { "Cache-Control": "no-cache" },
-        signal: AbortSignal.timeout(5000)
-      });
-      if (!response.ok) throw new Error(`Config HTTP ${response.status}`);
-      targets = validateTargets(await response.json());
-      refreshedAt = Date.now();
-    } catch (error) {
-      console.error("Could not refresh tunnel addresses:", error.message);
-      refreshedAt = Date.now();
-    } finally {
-      refreshing = null;
-    }
-  })();
-  return refreshing;
-}
-
-function route(req) {
-  if (req.url === "/camera-relay") req.url = "/";
-  else if (req.url.startsWith("/camera-relay/")) req.url = req.url.slice("/camera-relay".length);
-  else return targets.dashboard;
-  return targets.relay;
-}
-
-const proxy = httpProxy.createProxyServer({ ws: true, changeOrigin: true, secure: true,
-  timeout: 30_000, proxyTimeout: 30_000 });
-
-proxy.on("proxyReq", (proxyReq, req) => {
-  if (req.headers.origin) proxyReq.setHeader("Origin", req.gatewayTarget);
-});
-proxy.on("proxyReqWs", (proxyReq, req) => {
-  if (req.headers.origin) proxyReq.setHeader("Origin", req.gatewayTarget);
-});
-proxy.on("error", (error, req, res) => {
-  console.error("Tunnel target error:", error.message);
-  if (res && typeof res.writeHead === "function" && !res.headersSent) {
-    res.writeHead(503, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
-    res.end("ForgeCare is temporarily unavailable. Keep the host laptop and its public tunnel running, then retry.");
-  } else if (res && typeof res.destroy === "function") {
-    res.destroy();
-  }
-});
-
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
   if (req.url === "/gateway-health") {
     res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     res.end(JSON.stringify({ gateway: "ok", laptopBridge: Boolean(bridgeReady()),
                              activeRequests: pendingHttp.size, browserSockets: browserSockets.size,
-                             configured: Boolean(targets.dashboard), lastRefresh: refreshedAt }));
+                             bridgeLastSeen: lastBridgeHeartbeat || null }));
     return;
   }
-  if (bridgeReady()) return bridgeHttp(req, res);
-  await refreshTargets();
-  req.gatewayTarget = route(req);
-  proxy.web(req, res, { target: req.gatewayTarget });
+  if (!bridgeReady()) return unavailable(res);
+  bridgeHttp(req, res);
 });
 
-server.on("upgrade", async (req, socket, head) => {
+server.on("upgrade", (req, socket, head) => {
   try {
     if (req.url === "/bridge") {
       bridgeWss.handleUpgrade(req, socket, head, (ws) => acceptBridge(ws));
       return;
     }
-    if (bridgeReady()) {
-      browserWss.handleUpgrade(req, socket, head, (ws) => bridgeBrowser(ws, req));
-      return;
-    }
-    await refreshTargets();
-    req.gatewayTarget = route(req);
-    proxy.ws(req, socket, head, { target: req.gatewayTarget });
+    if (!bridgeReady()) return socket.destroy();
+    browserWss.handleUpgrade(req, socket, head, (ws) => bridgeBrowser(ws, req));
   } catch (error) {
     console.error("WebSocket upgrade failed:", error.message);
     socket.destroy();
