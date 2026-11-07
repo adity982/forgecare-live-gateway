@@ -1,0 +1,100 @@
+{
+  "dataset": "Renault AutoVI pipe clip \u00b7 adapted supervised split",
+  "source": "https://zenodo.org/records/10459003",
+  "license": "CC BY-NC-SA 4.0; local educational research only",
+  "source_images": 519,
+  "excluded_exact_duplicate_images": 13,
+  "seed": 42,
+  "image_size": 96,
+  "started_at_utc": "2026-11-05T17:04:41.319497+00:00",
+  "finished_at_utc": "2026-11-05T17:04:53.363648+00:00",
+  "topology": "two in-process Flower clients on one laptop; no site isolation",
+  "method": "96px grayscale CNN, Adam 0.001, three FedAvg rounds, three local epochs per round",
+  "split_policy": "Adapted supervised split of original AutoVI photos after excluding exact duplicate bytes; groups of ten adjacent file numbers kept together. Not comparable to original normal-only test protocol.",
+  "split_counts": {
+    "train": {
+      "acceptable": 270,
+      "defective": 88
+    },
+    "validation": {
+      "acceptable": 60,
+      "defective": 20
+    },
+    "test": {
+      "acceptable": 60,
+      "defective": 21
+    }
+  },
+  "client_counts": [
+    {
+      "id": "client-1",
+      "images": 179
+    },
+    {
+      "id": "client-2",
+      "images": 179
+    }
+  ],
+  "history": [
+    {
+      "round": 1,
+      "started_at_utc": "2026-11-05T17:04:44.090232+00:00",
+      "finished_at_utc": "2026-11-05T17:04:47.784319+00:00",
+      "client_examples": [
+        179,
+        179
+      ],
+      "client_losses": [
+        1.0670691496796079,
+        1.0474530756473541
+      ],
+      "validation_auc": 0.6970833333333333
+    },
+    {
+      "round": 2,
+      "started_at_utc": "2026-11-05T17:04:47.786408+00:00",
+      "finished_at_utc": "2026-11-05T17:04:50.364902+00:00",
+      "client_examples": [
+        179,
+        179
+      ],
+      "client_losses": [
+        1.0310424367586772,
+        1.0509386592441134
+      ],
+      "validation_auc": 0.7050000000000001
+    },
+    {
+      "round": 3,
+      "started_at_utc": "2026-11-05T17:04:50.367974+00:00",
+      "finished_at_utc": "2026-11-05T17:04:52.748932+00:00",
+      "client_examples": [
+        179,
+        179
+      ],
+      "client_losses": [
+        1.0365475085046556,
+        1.0223898357815213
+      ],
+      "validation_auc": 0.7691666666666667
+    }
+  ],
+  "test": {
+    "images": 81,
+    "normal": 60,
+    "defective": 21,
+    "threshold": 0.45000000000000007,
+    "roc_auc": 0.7857142857142857,
+    "accuracy": 0.6049382716049383,
+    "precision": 0.3877551020408163,
+    "recall": 0.9047619047619048,
+    "f1": 0.5428571428571428,
+    "confusion": {
+      "tn": 30,
+      "fp": 30,
+      "fn": 2,
+      "tp": 19
+    }
+  },
+  "limitations": "Research only. Grouped adjacent frames reduce but cannot eliminate related-component leakage. No independent factory-site evaluation. Raw images reside together on one laptop."
+}

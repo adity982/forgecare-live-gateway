@@ -1,0 +1,17 @@
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+.phone-federation-data-path
+.private-setup-complete
+private_data/
+data/
+*.sqlite3
+*.db
+first-login.txt
+*.log
+*.pid
+research/
+yolo11n.pt

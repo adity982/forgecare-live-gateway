@@ -1,0 +1,144 @@
+{
+  "dataset": "Cast pump impeller surface inspection",
+  "source": "https://www.kaggle.com/datasets/ravirajsinh45/real-life-industrial-dataset-of-casting-product",
+  "license": "CC BY-NC-ND 4.0; local educational research only",
+  "original_images": 1300,
+  "image_size": 96,
+  "seed": 42,
+  "started_at_utc": "2026-11-05T16:02:25.462236+00:00",
+  "finished_at_utc": "2026-11-05T16:02:47.622267+00:00",
+  "topology": "two in-process Flower clients on one laptop; no site isolation or privacy guarantee",
+  "rounds": 3,
+  "epochs_per_round": 3,
+  "batch_size": 32,
+  "optimizer": "Adam 0.001",
+  "threshold_selection": "maximum validation F1",
+  "split_counts": {
+    "train": {
+      "acceptable": 363,
+      "defective": 547
+    },
+    "validation": {
+      "acceptable": 78,
+      "defective": 117
+    },
+    "test": {
+      "acceptable": 78,
+      "defective": 117
+    }
+  },
+  "client_counts": [
+    {
+      "id": "client-1",
+      "images": 455,
+      "acceptable": 181,
+      "defective": 274
+    },
+    {
+      "id": "client-2",
+      "images": 455,
+      "acceptable": 182,
+      "defective": 273
+    }
+  ],
+  "history": [
+    {
+      "round": 1,
+      "started_at_utc": "2026-11-05T16:02:33.644600+00:00",
+      "finished_at_utc": "2026-11-05T16:02:39.318520+00:00",
+      "client_examples": [
+        455,
+        455
+      ],
+      "client_losses": [
+        0.5361272116502126,
+        0.5209614084826575
+      ],
+      "validation_auc": 0.7718606180144642
+    },
+    {
+      "round": 2,
+      "started_at_utc": "2026-11-05T16:02:39.318520+00:00",
+      "finished_at_utc": "2026-11-05T16:02:43.166019+00:00",
+      "client_examples": [
+        455,
+        455
+      ],
+      "client_losses": [
+        0.473150802983178,
+        0.4703229672378964
+      ],
+      "validation_auc": 0.7853385930309007
+    },
+    {
+      "round": 3,
+      "started_at_utc": "2026-11-05T16:02:43.166019+00:00",
+      "finished_at_utc": "2026-11-05T16:02:47.013512+00:00",
+      "client_examples": [
+        455,
+        455
+      ],
+      "client_losses": [
+        0.44924528731240165,
+        0.4277206427521176
+      ],
+      "validation_auc": 0.8199649353495506
+    }
+  ],
+  "test": {
+    "images": 195,
+    "normal": 78,
+    "defective": 117,
+    "threshold": 0.37,
+    "roc_auc": 0.826977865439404,
+    "accuracy": 0.7743589743589744,
+    "precision": 0.8067226890756303,
+    "recall": 0.8205128205128205,
+    "f1": 0.8135593220338984,
+    "confusion": {
+      "tn": 55,
+      "fp": 23,
+      "fn": 21,
+      "tp": 96
+    }
+  },
+  "client_holdouts": [
+    {
+      "id": "client-1",
+      "images": 97,
+      "normal": 39,
+      "defective": 58,
+      "threshold": 0.37,
+      "roc_auc": 0.9053934571175951,
+      "accuracy": 0.845360824742268,
+      "precision": 0.8524590163934426,
+      "recall": 0.896551724137931,
+      "f1": 0.8739495798319328,
+      "confusion": {
+        "tn": 30,
+        "fp": 9,
+        "fn": 6,
+        "tp": 52
+      }
+    },
+    {
+      "id": "client-2",
+      "images": 98,
+      "normal": 39,
+      "defective": 59,
+      "threshold": 0.37,
+      "roc_auc": 0.7409821816601477,
+      "accuracy": 0.7040816326530612,
+      "precision": 0.7586206896551724,
+      "recall": 0.7457627118644068,
+      "f1": 0.7521367521367521,
+      "confusion": {
+        "tn": 25,
+        "fp": 14,
+        "fn": 15,
+        "tp": 44
+      }
+    }
+  ],
+  "limitations": "Research only. Pump impeller photos are not car- or phone-specific; no independent production line validation. Source says the alternate 300px set is pre-augmented, so this run uses the 512px originals."
+}

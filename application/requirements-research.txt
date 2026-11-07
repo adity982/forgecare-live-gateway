@@ -1,0 +1,11 @@
+# Separate from the operational app environment. These versions were used for
+# the VisA capsules training run on Windows with Python 3.12.
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+Pillow==13.0.0
+scikit-learn==1.9.1
+joblib==1.6.0
+torch==2.15.0
+torchvision==0.29.2
+flwr==1.43.0
+anomalib==2.7.0

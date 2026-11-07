@@ -1,0 +1,59 @@
+{
+  "dataset": "Public cracked/intact smartphone sample plus cracked-screen photo sample",
+  "source": [
+    "https://www.kaggle.com/datasets/axondata/cracked-and-intact-smartphone-images-dataset",
+    "https://www.kaggle.com/datasets/dataclusterlabs/cracked-screen-dataset"
+  ],
+  "license": "Axon: CC BY-NC 4.0; DataCluster page: CC0 metadata with ownership/licensing caveat in description; local educational research only",
+  "unreadable_external_images": [
+    "C:\\Users\\crazy\\Documents\\Codex\\2026-11-03\\ba\\work\\datasets\\datacluster_cracked_screens\\selected_zip\\Datacluster Cracked Screen (217).jpg"
+  ],
+  "images": 370,
+  "split_counts": {
+    "train": {
+      "intact": 20,
+      "cracked": 201
+    },
+    "validation": {
+      "intact": 7,
+      "cracked": 67
+    },
+    "test": {
+      "intact": 7,
+      "cracked": 68
+    }
+  },
+  "started_at_utc": "2026-11-05T16:32:56.896673+00:00",
+  "finished_at_utc": "2026-11-05T16:34:29.965290+00:00",
+  "method": "ImageNet ResNet18 frozen features plus fitted balanced logistic regression",
+  "seed": 42,
+  "selected_c": 0.1,
+  "threshold": 0.5,
+  "test": {
+    "images": 75,
+    "intact": 7,
+    "cracked": 68,
+    "confusion": {
+      "tn": 5,
+      "fp": 2,
+      "fn": 2,
+      "tp": 66
+    },
+    "roc_auc": 0.9264705882352942
+  },
+  "test_by_dataset": {
+    "axon_cracked": {
+      "photos": 8,
+      "flagged": 8
+    },
+    "axon_intact": {
+      "photos": 7,
+      "flagged": 2
+    },
+    "datacluster_cracked": {
+      "photos": 60,
+      "flagged": 58
+    }
+  },
+  "limitations": "Public samples lack physical-phone IDs or near-duplicate groups; backgrounds and source differences may drive predictions. The external cracked-only set has no intact controls. No dent or scratch annotations. No iPhone 14 Plus or realme validation."
+}

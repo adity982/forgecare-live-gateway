@@ -1,0 +1,11 @@
+# Install after requirements.txt in the prepared research environment.
+# With opencv-python-headless already installed, use pip install --no-deps
+# -r requirements-vision.txt to avoid replacing the active OpenCV DLL.
+ultralytics==8.4.202
+polars==2.1.0
+ultralytics-thop==2.2.5
+torchvision==0.29.2
+polars-runtime-32==2.1.0
+psutil==7.2.2
+nvidia-ml-py==13.615.71
+ultralytics-platform==0.1.104

@@ -1,0 +1,140 @@
+{
+  "source": "https://universe.roboflow.com/pharmacy-shelf-medicine-detection/mobile-phone-defect-detection-faraf/dataset/30",
+  "evaluated_at_utc": "2026-11-05T23:48:30.036044+00:00",
+  "confidence_selection": "Validation macro box F1, IoU >= 0.5; held-out test was not used to choose confidence",
+  "validation": {
+    "photos": 107,
+    "threshold": 0.2,
+    "classes": {
+      "Broken": {
+        "annotated_regions": 40,
+        "suggested_regions": 55,
+        "localized_correctly": 17,
+        "false_regions": 38,
+        "missed_regions": 23,
+        "photos_with_class": 40,
+        "photos_without_class": 67,
+        "false_alert_photos": 14,
+        "exact_count_photos": 90,
+        "exact_positive_count_photos": 37,
+        "total_photos": 107,
+        "precision": 0.3090909090909091,
+        "recall": 0.425
+      },
+      "Dent": {
+        "annotated_regions": 28,
+        "suggested_regions": 0,
+        "localized_correctly": 0,
+        "false_regions": 0,
+        "missed_regions": 28,
+        "photos_with_class": 28,
+        "photos_without_class": 79,
+        "false_alert_photos": 0,
+        "exact_count_photos": 79,
+        "exact_positive_count_photos": 0,
+        "total_photos": 107,
+        "precision": 0,
+        "recall": 0.0
+      },
+      "Major Scratch": {
+        "annotated_regions": 13,
+        "suggested_regions": 6,
+        "localized_correctly": 2,
+        "false_regions": 4,
+        "missed_regions": 11,
+        "photos_with_class": 13,
+        "photos_without_class": 94,
+        "false_alert_photos": 4,
+        "exact_count_photos": 92,
+        "exact_positive_count_photos": 2,
+        "total_photos": 107,
+        "precision": 0.3333333333333333,
+        "recall": 0.15384615384615385
+      },
+      "Small Scratch": {
+        "annotated_regions": 26,
+        "suggested_regions": 26,
+        "localized_correctly": 14,
+        "false_regions": 12,
+        "missed_regions": 12,
+        "photos_with_class": 26,
+        "photos_without_class": 81,
+        "false_alert_photos": 7,
+        "exact_count_photos": 91,
+        "exact_positive_count_photos": 17,
+        "total_photos": 107,
+        "precision": 0.5384615384615384,
+        "recall": 0.5384615384615384
+      }
+    },
+    "macro_box_f1": 0.2767206477732793
+  },
+  "test": {
+    "photos": 99,
+    "threshold": 0.2,
+    "classes": {
+      "Broken": {
+        "annotated_regions": 45,
+        "suggested_regions": 55,
+        "localized_correctly": 20,
+        "false_regions": 35,
+        "missed_regions": 25,
+        "photos_with_class": 41,
+        "photos_without_class": 58,
+        "false_alert_photos": 16,
+        "exact_count_photos": 78,
+        "exact_positive_count_photos": 36,
+        "total_photos": 99,
+        "precision": 0.36363636363636365,
+        "recall": 0.4444444444444444
+      },
+      "Dent": {
+        "annotated_regions": 14,
+        "suggested_regions": 0,
+        "localized_correctly": 0,
+        "false_regions": 0,
+        "missed_regions": 14,
+        "photos_with_class": 14,
+        "photos_without_class": 85,
+        "false_alert_photos": 0,
+        "exact_count_photos": 85,
+        "exact_positive_count_photos": 0,
+        "total_photos": 99,
+        "precision": 0,
+        "recall": 0.0
+      },
+      "Major Scratch": {
+        "annotated_regions": 24,
+        "suggested_regions": 13,
+        "localized_correctly": 9,
+        "false_regions": 4,
+        "missed_regions": 15,
+        "photos_with_class": 24,
+        "photos_without_class": 75,
+        "false_alert_photos": 1,
+        "exact_count_photos": 86,
+        "exact_positive_count_photos": 12,
+        "total_photos": 99,
+        "precision": 0.6923076923076923,
+        "recall": 0.375
+      },
+      "Small Scratch": {
+        "annotated_regions": 20,
+        "suggested_regions": 30,
+        "localized_correctly": 10,
+        "false_regions": 20,
+        "missed_regions": 10,
+        "photos_with_class": 20,
+        "photos_without_class": 79,
+        "false_alert_photos": 12,
+        "exact_count_photos": 83,
+        "exact_positive_count_photos": 16,
+        "total_photos": 99,
+        "precision": 0.3333333333333333,
+        "recall": 0.5
+      }
+    },
+    "macro_box_f1": 0.3216216216216216
+  },
+  "limitations": "Clip-grouped source split, but no physical-phone IDs. Some source annotations conflicted and were excluded. Held-out classes have few instances, especially Dent. Counts are candidate regions per photo, not verified physical-phone totals. No iPhone 14 Plus or realme test labels."
+}
