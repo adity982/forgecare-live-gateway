@@ -1,48 +1,39 @@
-from pathlib import Path
+import json
+import sys
 
-import numpy as np
-
+from forgecare.federation import simulate_synthetic_federation
+from forgecare import federated_client
 from forgecare import phone_federation_schedule as schedule
 
 
-def test_two_clients_keep_physical_samples_separate():
-    labels = np.asarray([0] * 12 + [1] * 12)
-    groups = np.asarray([f"good-{i // 2}" for i in range(12)] + [f"bad-{i // 2}" for i in range(12)])
-    parts = schedule.two_clients(labels, groups, np.arange(24))
-    assert all(set(labels[part]) == {0, 1} for part in parts)
-    assert not set(groups[parts[0]]) & set(groups[parts[1]])
+def test_synthetic_federation_uses_five_rounds_and_keeps_rows_local():
+    result = simulate_synthetic_federation()
+
+    assert result["dataset"] == "newly_generated_synthetic_examples_in_memory"
+    assert result["raw_data_shared"] is False
+    assert result["round_count"] == 5
+    assert [item["round"] for item in result["rounds"]] == [1, 2, 3, 4, 5]
+    assert set(result["clients"]) == {"Client A", "Client B"}
+    assert all(item["client_updates"]["Client A"]["training_examples"] > 0
+               for item in result["rounds"])
 
 
-def test_scheduled_tick_skips_unusable_same_phone_labels(monkeypatch, tmp_path):
-    monkeypatch.setattr(schedule, "select_rows", lambda site, asset: ([], {
-        "reviewed_photos": 5, "usable_labeled_photos": 0,
-        "distinct_acceptable_phones": 0, "distinct_damaged_phones": 0,
-        "conflicting_phone_ids": 1}))
-    result = schedule.train_asset("site", {"id": "iphone", "model": "iPhone 14 Plus"}, tmp_path)
-    assert result["status"] == "skipped_insufficient_distinct_reviewed_phones"
-    assert not list(tmp_path.glob("*.joblib"))
+def test_scheduled_tick_writes_synthetic_report_to_requested_directory(tmp_path):
+    report_path = schedule.run_tick(tmp_path)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert report_path.parent == tmp_path
+    assert report["data_source"] == "newly generated synthetic examples in memory; no existing data read"
+    assert report["simulation"]["round_count"] == 5
+    assert len(report["simulation"]["rounds"]) == 5
 
 
-def test_fedavg_trains_and_saves_model_only_after_grouped_check(monkeypatch, tmp_path):
-    records = []
-    features = {}
-    for label, prefix in ((0, "good"), (1, "bad")):
-        for phone in range(9):
-            for photo in range(3):
-                path = tmp_path / f"{prefix}-{phone}-{photo}.jpg"
-                path.write_bytes(f"{prefix}-{phone}-{photo}".encode())
-                records.append({"id": path.stem, "image_path": str(path),
-                                "sample_id": f"{prefix}-{phone}", "binary_label": label})
-                vector = np.zeros(schedule.VISUAL_FEATURE_COUNT)
-                vector[0] = .2 + .5 * label + .01 * photo
-                features[str(path)] = vector
-    monkeypatch.setattr(schedule, "select_rows", lambda site, asset: (records, {
-        "reviewed_photos": len(records), "usable_labeled_photos": len(records),
-        "distinct_acceptable_phones": 9, "distinct_damaged_phones": 9,
-        "conflicting_phone_ids": 0}))
-    monkeypatch.setattr(schedule, "image_features", lambda path: features[str(path)])
-    result = schedule.train_asset("site", {"id": "iphone", "model": "iPhone 14 Plus"}, tmp_path)
-    assert result["status"] == "completed_local_research_model"
-    assert len(result["rounds"]) == 3
-    assert result["train_photos"] + result["validation_photos"] + result["test_photos"] == len(records)
-    assert Path(result["model_path"]).exists()
+def test_synthetic_client_cli_runs_without_manifest_or_credentials(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["federated_client", "synthetic-demo", "--pause-seconds", "0"])
+
+    federated_client.run()
+
+    output = capsys.readouterr().out
+    result = json.loads(output[output.index("{"):])
+    assert result["round_count"] == 5
+    assert result["raw_data_shared"] is False

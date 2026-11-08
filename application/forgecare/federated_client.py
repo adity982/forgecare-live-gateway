@@ -11,12 +11,12 @@ from pathlib import Path
 import numpy as np
 import requests
 
-from .config import OPS_URL
-from .federation import VISUAL_FEATURE_COUNT, sigmoid, train_client
-from .vision import grouped_splits, image_features
+from .federation import VISUAL_FEATURE_COUNT, sigmoid, simulate_synthetic_federation, train_client
 
 
 def local_dataset(manifest: Path):
+    from .vision import grouped_splits, image_features
+
     with manifest.open(encoding="utf-8-sig", newline="") as stream:
         records = list(csv.DictReader(stream))
     required = {"image_path", "binary_label", "sample_id"}
@@ -51,13 +51,23 @@ def metrics(weights: np.ndarray, X: np.ndarray, y: np.ndarray) -> dict:
 
 def run():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["train", "validate"])
-    parser.add_argument("--round", required=True)
-    parser.add_argument("--site", required=True)
-    parser.add_argument("--client", required=True)
-    parser.add_argument("--manifest", required=True, type=Path)
-    parser.add_argument("--username", required=True)
+    parser.add_argument("action", choices=["train", "validate", "synthetic-demo"])
+    parser.add_argument("--round")
+    parser.add_argument("--site")
+    parser.add_argument("--client")
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--username")
+    parser.add_argument("--pause-seconds", type=float, default=.3,
+                        help="Delay between animation frames in synthetic-demo (default: 0.3)")
     args = parser.parse_args()
+    if args.action == "synthetic-demo":
+        print(json.dumps(simulate_synthetic_federation(animate=True, pause_seconds=args.pause_seconds), indent=2))
+        return
+    missing = [name for name in ("round", "site", "client", "manifest", "username") if getattr(args, name) is None]
+    if missing:
+        parser.error(f"--{missing[0]} is required for {args.action}")
+    from .config import OPS_URL
+
     password = os.environ.get("FORGECARE_PASSWORD")
     if not password:
         raise SystemExit("Set FORGECARE_PASSWORD in this shell; do not put it on the command line")
