@@ -1,5 +1,7 @@
 # ForgeCare fixed public bridge
 
+[![Gateway CI](https://github.com/adity982/forgecare-live-gateway/actions/workflows/gateway-ci.yml/badge.svg)](https://github.com/adity982/forgecare-live-gateway/actions/workflows/gateway-ci.yml)
+
 The presentation address is **https://forgecare-ai-live.onrender.com**. The Render gateway receives one outbound, authenticated WebSocket connection from the prepared laptop. Browser HTTP and Streamlit WebSocket traffic go through that connection to the laptop's loopback dashboard; `/camera-relay/*` reaches the laptop's camera relay. There is no rotating `trycloudflare.com` hostname.
 
 ## Application source
@@ -7,6 +9,8 @@ The presentation address is **https://forgecare-ai-live.onrender.com**. The Rend
 The Python application served through this gateway is included in [`application/`](application/README.md). Its dashboard, operations and knowledge APIs, tests, documentation, and research scripts are visible here. In particular, [`application/forgecare/federation.py`](application/forgecare/federation.py) implements local client training and weighted aggregation; [`application/forgecare/phone_federation_schedule.py`](application/forgecare/phone_federation_schedule.py) runs the reviewed-phone attempt; and [`application/scripts/train_autovi_federated.py`](application/scripts/train_autovi_federated.py) contains the actual Flower automotive research run. This is a source snapshot from the private application repository at commit `fddf126`.
 
 For the file map, PyCharm setup, tests, and contribution workflow, see the [local development guide](DEVELOPMENT.md).
+
+The public gateway has dependency-clean smoke coverage for its fail-closed behavior: CI verifies on Node 20 and 22 that the health endpoint reports an offline laptop without host data and that ordinary requests return `503` until an authenticated bridge connects. The Python application tests remain local because their pinned Python 3.14 environment includes large vision and ML dependencies.
 
 Render still starts the Node gateway in `server.js`; it does not run the Python app or store its operational data. The public source snapshot excludes the laptop's credentials, inspection database and photos, downloaded datasets, and two trained phone research weights. The source datasets have redistribution restrictions, so a fresh checkout cannot reproduce every model demonstration without separately authorized data and weights. The complete working demonstration remains on the connected laptop.
 
