@@ -7,6 +7,7 @@ const crypto = require("node:crypto");
 const { WebSocket, WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT || 10000);
+const SOURCE_URL = "https://github.com/adity982/forgecare-live-gateway";
 const BRIDGE_PUBLIC_KEY = crypto.createPublicKey(fs.readFileSync(path.join(__dirname, "bridge-public.pem")));
 const MAX_BRIDGE_MESSAGE = 32 * 1024 * 1024;
 let bridge = null;
@@ -28,8 +29,33 @@ function sendBridge(packet) {
 
 function unavailable(res) {
   if (res.headersSent) return res.destroy();
-  res.writeHead(503, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
-  res.end("ForgeCare's host laptop is disconnected. The fixed public address is working; the laptop bridge is reconnecting.");
+  res.writeHead(503, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Retry-After": "30",
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(`<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ForgeCare is reconnecting</title>
+<style>
+  :root { color-scheme: light dark; font: 17px/1.55 system-ui, sans-serif; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #101513; color: #eef7f1; }
+  main { width: min(42rem, calc(100% - 3rem)); }
+  p { color: #b9c8bf; }
+  a { color: #8ee6b2; }
+  code { color: #d9ffe7; }
+</style>
+<main>
+  <p><strong>Gateway online · laptop bridge reconnecting</strong></p>
+  <h1>ForgeCare is temporarily offline</h1>
+  <p>The public gateway is healthy, but the authenticated laptop that runs the private demo data and models is not connected. Retry in about 30 seconds.</p>
+  <p>No inspection records, photos, model weights, passwords, or API keys are stored on this gateway.</p>
+  <p><a href="${SOURCE_URL}">Explore the public source and architecture</a> or check <a href="/gateway-health"><code>/gateway-health</code></a>.</p>
+</main>`);
 }
 
 function closeBridgeClients() {

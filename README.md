@@ -1,8 +1,34 @@
-# ForgeCare fixed public bridge
+# ForgeCare Live Gateway
 
 [![Gateway CI](https://github.com/adity982/forgecare-live-gateway/actions/workflows/gateway-ci.yml/badge.svg)](https://github.com/adity982/forgecare-live-gateway/actions/workflows/gateway-ci.yml)
 
-The presentation address is **https://forgecare-ai-live.onrender.com**. The Render gateway receives one outbound, authenticated WebSocket connection from the prepared laptop. Browser HTTP and Streamlit WebSocket traffic go through that connection to the laptop's loopback dashboard; `/camera-relay/*` reaches the laptop's camera relay. There is no rotating `trycloudflare.com` hostname.
+An authenticated, fail-closed reverse proxy for a laptop-hosted AI inspection demo. It keeps ForgeCare's operational database, photos, credentials, and model artifacts on the laptop while providing one stable public address.
+
+**[Open the live demo](https://forgecare-ai-live.onrender.com)** · **[Check gateway status](https://forgecare-ai-live.onrender.com/gateway-health)** · **[Read the application source](application/README.md)**
+
+If the laptop is offline, the public URL returns an informative `503` page with a source link instead of forwarding to an expired origin. Render's free service may take a moment to wake up.
+
+## 60-second tour
+
+| Start here | What it shows |
+| --- | --- |
+| [`server.js`](server.js) | Ed25519 bridge authentication, bounded HTTP/WebSocket forwarding, and fail-closed behavior |
+| [`test/server.test.js`](test/server.test.js) | Dependency-clean regressions for health responses and offline requests |
+| [`application/forgecare/`](application/forgecare/) | The Python inspection workflow, cited knowledge assistant, queue, and federated-learning exercises |
+| [`application/docs/RESEARCH_AND_DATA.md`](application/docs/RESEARCH_AND_DATA.md) | Dataset provenance, measured experiments, limitations, and reproduction boundaries |
+| [`DEVELOPMENT.md`](DEVELOPMENT.md) | Local setup, repository map, tests, and safe contribution workflow |
+
+```mermaid
+flowchart LR
+    Browser[Browser] -->|HTTPS + WebSocket| Gateway[Render gateway\npublic, no operational data]
+    Gateway -->|Ed25519-authenticated\noutbound bridge| Agent[Laptop bridge agent]
+    Agent --> UI[Streamlit dashboard]
+    Agent --> APIs[Operations + knowledge APIs]
+    Agent --> Camera[Camera relay]
+    APIs --> Private[(Private local data\nand model artifacts)]
+```
+
+The Render gateway receives one outbound, authenticated WebSocket connection from the prepared laptop. Browser HTTP and Streamlit WebSocket traffic go through that connection to the laptop's loopback dashboard; `/camera-relay/*` reaches the laptop's camera relay. There is no rotating `trycloudflare.com` hostname.
 
 ## Application source
 

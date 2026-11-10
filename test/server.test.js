@@ -70,5 +70,12 @@ test("ordinary requests fail closed while the authenticated bridge is offline", 
 
   assert.equal(response.status, 503);
   assert.equal(response.headers.get("cache-control"), "no-store");
-  assert.match(await response.text(), /host laptop is disconnected/i);
+  assert.equal(response.headers.get("retry-after"), "30");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+  assert.match(response.headers.get("content-type"), /^text\/html/);
+  const body = await response.text();
+  assert.match(body, /laptop bridge reconnecting/i);
+  assert.match(body, /github\.com\/adity982\/forgecare-live-gateway/);
+  assert.doesNotMatch(body, /first-login|localappdata|private signing key/i);
 });
