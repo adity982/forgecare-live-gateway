@@ -4,9 +4,9 @@
 
 An authenticated, fail-closed reverse proxy for a laptop-hosted AI inspection demo. It keeps ForgeCare's operational database, photos, credentials, and model artifacts on the laptop while providing one stable public address.
 
-**[Open the live demo](https://forgecare-ai-live.onrender.com)** · **[Check gateway status](https://forgecare-ai-live.onrender.com/gateway-health)** · **[Read the application source](application/README.md)**
+**[Open the live demo](https://forgecare-ai-live.onrender.com)** · **[Take the always-available tour](https://forgecare-ai-live.onrender.com/about)** · **[Check gateway status](https://forgecare-ai-live.onrender.com/gateway-health)** · **[Read the application source](application/README.md)**
 
-If the laptop is offline, the public URL returns an informative `503` page with a source link instead of forwarding to an expired origin. Render's free service may take a moment to wake up.
+If the laptop is offline, the public URL returns an informative `503` page with a source link instead of forwarding to an expired origin. The `/about` tour remains available in either state, so visitors can inspect the architecture, live bridge status, and evidence boundaries even when the Streamlit UI is waking up. Render's free service may take a moment to wake up.
 
 ## 60-second tour
 
@@ -17,6 +17,8 @@ If the laptop is offline, the public URL returns an informative `503` page with 
 | [`application/forgecare/`](application/forgecare/) | The Python inspection workflow, cited knowledge assistant, queue, and federated-learning exercises |
 | [`application/docs/RESEARCH_AND_DATA.md`](application/docs/RESEARCH_AND_DATA.md) | Dataset provenance, measured experiments, limitations, and reproduction boundaries |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Local setup, repository map, tests, and safe contribution workflow |
+
+The [always-available project tour](https://forgecare-ai-live.onrender.com/about) is served directly by the gateway. It does not require the laptop bridge, operational data, or a Streamlit session.
 
 ```mermaid
 flowchart LR

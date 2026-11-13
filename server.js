@@ -8,6 +8,7 @@ const { WebSocket, WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT || 10000);
 const SOURCE_URL = "https://github.com/adity982/forgecare-live-gateway";
+const ABOUT_PATH = "/about";
 const BRIDGE_PUBLIC_KEY = crypto.createPublicKey(fs.readFileSync(path.join(__dirname, "bridge-public.pem")));
 const MAX_BRIDGE_MESSAGE = 32 * 1024 * 1024;
 let bridge = null;
@@ -27,16 +28,20 @@ function sendBridge(packet) {
   return true;
 }
 
-function unavailable(res) {
+function secureHtml(res, status, body, extraHeaders = {}) {
   if (res.headersSent) return res.destroy();
-  res.writeHead(503, {
+  res.writeHead(status, {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "no-store",
-    "Retry-After": "30",
     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
+    ...extraHeaders,
   });
-  res.end(`<!doctype html>
+  res.end(body);
+}
+
+function unavailable(res) {
+  secureHtml(res, 503, `<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -54,7 +59,55 @@ function unavailable(res) {
   <h1>ForgeCare is temporarily offline</h1>
   <p>The public gateway is healthy, but the authenticated laptop that runs the private demo data and models is not connected. Retry in about 30 seconds.</p>
   <p>No inspection records, photos, model weights, passwords, or API keys are stored on this gateway.</p>
-  <p><a href="${SOURCE_URL}">Explore the public source and architecture</a> or check <a href="/gateway-health"><code>/gateway-health</code></a>.</p>
+  <p><a href="${ABOUT_PATH}">Take the always-available project tour</a>, <a href="${SOURCE_URL}">explore the public source</a>, or check <a href="/gateway-health"><code>/gateway-health</code></a>.</p>
+</main>`, { "Retry-After": "30" });
+}
+
+function about(res) {
+  const connected = Boolean(bridgeReady());
+  const statusLabel = connected ? "Laptop demo connected" : "Laptop demo reconnecting";
+  const statusClass = connected ? "online" : "offline";
+  secureHtml(res, 200, `<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A source-linked tour of ForgeCare's authenticated, fail-closed AI inspection demo gateway.">
+<title>ForgeCare project tour</title>
+<style>
+  :root { color-scheme: light dark; font: 17px/1.55 system-ui, sans-serif; }
+  body { margin: 0; background: #101513; color: #eef7f1; }
+  main { width: min(54rem, calc(100% - 3rem)); margin: 0 auto; padding: 4rem 0; }
+  p, li { color: #b9c8bf; }
+  a { color: #8ee6b2; }
+  code { color: #d9ffe7; }
+  .eyebrow { color: #8ee6b2; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .status { display: inline-block; padding: .35rem .7rem; border: 1px solid #52665a; border-radius: 999px; }
+  .online { color: #8ee6b2; }
+  .offline { color: #ffd38e; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin: 2rem 0; }
+  section { border: 1px solid #2d3b33; padding: 1rem 1.2rem; background: #151c18; }
+  h1 { font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1; max-width: 12ch; }
+  h2 { font-size: 1.15rem; }
+</style>
+<main>
+  <p class="eyebrow">ForgeCare AI · public gateway</p>
+  <h1>Inspect the architecture before the demo.</h1>
+  <p class="status ${statusClass}">${statusLabel}</p>
+  <p>This gateway gives a laptop-hosted inspection prototype one stable public address. The operational database, photos, credentials, and model artifacts remain on the laptop.</p>
+  <p><a href="/">Open the live Streamlit demo</a> · <a href="/gateway-health">Read gateway status</a> · <a href="${SOURCE_URL}">Browse the source</a></p>
+  <div class="grid">
+    <section><h2>1. Browser</h2><p>HTTP and Streamlit WebSocket traffic arrive over the public Render URL.</p></section>
+    <section><h2>2. Gateway</h2><p>A dependency-light Node service forwards requests only while an Ed25519-authenticated bridge is connected.</p></section>
+    <section><h2>3. Laptop</h2><p>The outbound bridge reaches loopback services. No inbound port or rotating tunnel URL is required.</p></section>
+  </div>
+  <h2>What to verify</h2>
+  <ul>
+    <li><code>/gateway-health</code> reports gateway and bridge state without host paths or credentials.</li>
+    <li>Ordinary requests fail closed with HTTP 503 while the authenticated bridge is offline.</li>
+    <li>The public repository includes the gateway tests and a source snapshot of the Python workflow.</li>
+  </ul>
+  <h2>Evidence boundary</h2>
+  <p>The public Node CI validates gateway behavior on Node 20 and 22. It does not validate the Python vision models or establish production inspection accuracy. Research metrics and dataset restrictions are documented in the repository.</p>
 </main>`);
 }
 
@@ -185,6 +238,10 @@ setInterval(() => {
 }, 15000).unref();
 
 const server = http.createServer((req, res) => {
+  if (req.url === ABOUT_PATH) {
+    about(res);
+    return;
+  }
   if (req.url === "/gateway-health") {
     res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     res.end(JSON.stringify({ gateway: "ok", laptopBridge: Boolean(bridgeReady()),

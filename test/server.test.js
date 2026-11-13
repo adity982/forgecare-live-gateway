@@ -76,6 +76,25 @@ test("ordinary requests fail closed while the authenticated bridge is offline", 
   assert.match(response.headers.get("content-type"), /^text\/html/);
   const body = await response.text();
   assert.match(body, /laptop bridge reconnecting/i);
+  assert.match(body, /href="\/about"/);
+  assert.match(body, /github\.com\/adity982\/forgecare-live-gateway/);
+  assert.doesNotMatch(body, /first-login|localappdata|private signing key/i);
+});
+
+test("project tour stays available while the laptop bridge is offline", async (t) => {
+  const baseUrl = await startGateway(t);
+  const response = await fetch(`${baseUrl}/about`);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+  const body = await response.text();
+  assert.match(body, /ForgeCare project tour/);
+  assert.match(body, /Laptop demo reconnecting/);
+  assert.match(body, /Evidence boundary/);
+  assert.match(body, /Node 20 and 22/);
+  assert.match(body, /href="\/gateway-health"/);
   assert.match(body, /github\.com\/adity982\/forgecare-live-gateway/);
   assert.doesNotMatch(body, /first-login|localappdata|private signing key/i);
 });
